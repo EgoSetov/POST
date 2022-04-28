@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/5.0.0-alpha1/css/bootstrap.min.css"
+        integrity="sha384-r4NyP46KrjDleawBgD5tp8Y7UzmLA05oM1iAEQ17CSuDqnUK2+k9luXQOfXJCJ4I" crossorigin="anonymous">
+    <script src="https://unpkg.com/vue@3"></script>
+    <title>test</title>
+</head>
+
+<body id="app">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+            <span style="cursor: pointer;" class="navbar-brand">POSTS</span>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div @click="showModalCreatePost(true)" v-if="dataUser.isAuth"
+                class="collapse navbar-collapse d-flex justify-content-center" id="navbarNav">
+                <div class="btn btn-success">Создать пост</div>
+            </div>
+            <div v-if="!dataUser.isAuth" @click="showModalSignin(true)" class="btn btn-primary">Войти</div>
+            <div v-else class="d-flex align-items-center">
+                <span style="margin-right: 10px;">{{dataUser.user?.login}}</span>
+                <div @click="exit" class="btn btn-danger">Выйти</div>
+            </div>
+        </div>
+    </nav>
+    <div class="container">
+        <div class="myPosts">
+            <h1>Мои посты</h1>
+            <div style="display: flex; flex-direction: column; gap: 25px;" v-if="dataUser.myPosts.length" class="myPosts-posts">
+                <hr>
+                <div v-for="post in dataUser.myPosts" :key="post.id" class="card">
+                    <div class="card-header d-flex justify-content-between">
+                        <h5>Author: {{post.login || 'user'}}</h5>
+                        <div style="gap: 10px" class="d-flex">
+                            <button @click="removePost(post.id)" class="btn btn-danger">Удалить</button>
+                            <button @click="changePost(post.id)" class="btn btn-warning">Изменить</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">{{post.body}}</p>
+                        <img v-if="post.image" width="500" :src="post.image" alt="photo">
+                    </div>
+                    <div class="card-footer text-muted">
+                        {{post.date}}
+                    </div>
+                </div>
+            </div>
+            <h5 v-else>У вас нет постов</h5>
+        </div>
+    </div>
+    <div :class="{show: modal.signin}" :style="{display: modal.signin ? 'block': 'none'}" class="modal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Вход</h5>
+                    <button @click="showModalSignin(false)" type="button" class="close" data-dismiss="modal"
+                        aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="formLigon" @submit.prevent="signin">
+                        <div class="mb-3">
+                            <label for="exampleInputEmail1" class="form-label">Email</label>
+                            <input type="email" v-model="login" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label for="exampleInputPassword1" class="form-label">Password</label>
+                            <input v-model="password" type="password" class="form-control">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Войти</button>
+                    </form>
+                </div>
+                <div @click="showModalSignup(true)" style="cursor: pointer;" class="modal-footer justify-content-start">
+                    <span>Зарегистрироваться</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div :class="{show: modal.signup}" :style="{display: modal.signup ? 'block': 'none'}" class="modal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Регистрация</h5>
+                    <button @click="showModalSignup(false)" type="button" class="close" data-dismiss="modal"
+                        aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form @submit.prevent="signup" id="formSignup">
+                        <div class="mb-3">
+                            <label for="exampleInputEmail1" class="form-label">Email</label>
+                            <input type="email" v-model="login" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label for="exampleInputPassword1" class="form-label">Password</label>
+                            <input v-model="password" type="password" class="form-control">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
+                    </form>
+                </div>
+                <div @click="showModalSignin(true)" style="cursor: pointer;" class="modal-footer justify-content-start">
+                    <span>Войти</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div :class="{show: modal.createPost}" :style="{display: modal.createPost ? 'block': 'none'}" class="modal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Создание поста</h5>
+                    <button @click="showModalCreatePost(false)" type="button" class="close" data-dismiss="modal"
+                        aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form @submit.prevent="createPost" id="formSignup">
+                        <div class="mb-3">
+                            <label for="image" class="form-label">Фото</label>
+                            <input @change="loadImage" class="form-control" id="image" type="file"
+                                accept="image/png, image/gif, image/jpeg">
+                        </div>
+                        <div class="mb-3">
+                            <label for="body" class="form-label">Тело поста</label>
+                            <input required id="body" v-model="post.body" type="text" class="form-control">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Создать пост</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div :class="{show: change.visible}" :style="{display: change.visible ? 'block': 'none'}" class="modal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Изменение поста</h5>
+                    <button @click="change.visible = false" type="button" class="close" data-dismiss="modal"
+                        aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form @submit.prevent="saveChangePost" id="formSignup">
+                        <div class="mb-3">
+                            <label for="image" class="form-label">Фото</label>
+                            <input @change="loadImage" class="form-control" id="image" type="file"
+                                accept="image/png, image/gif, image/jpeg">
+                        </div>
+                        <div class="mb-3">
+                            <label for="body" class="form-label">Тело поста</label>
+                            <input required id="body" v-model="post.body" type="text" class="form-control">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Сохранить</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div :style="{display: alert.visible ? 'flex' : 'none'}" class="alert alert-primary" id="myAlert" role="alert">{{alert.text}}</div>
+    <script src="./main.js"></script>
+</body>
+<style>
+    #myAlert {
+        position: fixed;
+        top: 20px;
+        right: 50%;
+        transform: translateX(50%);
+        z-index: 10000;
+    }
+</style>
+
+</html>
